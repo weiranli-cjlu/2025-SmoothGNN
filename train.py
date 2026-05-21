@@ -1,5 +1,4 @@
 """Command-line runner for SmoothGNN on GAD .mat datasets."""
-
 from __future__ import annotations
 
 import argparse
@@ -32,7 +31,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--eps", type=float, default=None, help="Epsilon threshold")
     parser.add_argument("--decay", "--weight_decay", dest="decay", type=float, default=1e-6, help="Weight decay")
     parser.add_argument("--init", type=float, default=None, help="Weight initialization std")
-    parser.add_argument("--device", default="cpu", help="cpu, cuda, or cuda:0")
+    parser.add_argument("--device", default="cuda", help="cpu, cuda, or cuda:0")
     parser.add_argument("--verbose", action="store_true", help="Print per-trial progress summary; no per-epoch logs are printed")
     parser.add_argument("--tqdm", action="store_true", help="Show tqdm bar.")
     return parser.parse_args()
@@ -51,10 +50,13 @@ def apply_defaults(args: argparse.Namespace) -> argparse.Namespace:
 
 def train_one_trial(args: argparse.Namespace, trial_id: int) -> dict:
     seed = set_seed(args.seed + trial_id)
-    graph, features, labels, edge_index, index = load_data(args.dataset, args.data_dir)
+    features, labels, edge_index, index = load_data(args.dataset, args.data_dir)
 
-    device = torch.device(args.device if torch.cuda.is_available() or args.device == "cpu" else "cpu")
-    graph = graph.to(device)
+    if args.device.startswith("cuda") and not torch.cuda.is_available():
+        device = torch.device("cpu")
+    else:
+        device = torch.device(args.device)
+
     features = features.to(device)
     labels = labels.to(device)
     edge_index = edge_index.to(device)
@@ -64,7 +66,7 @@ def train_one_trial(args: argparse.Namespace, trial_id: int) -> dict:
     m = edge_index.shape[1]
     lap = get_lap(edge_index.cpu(), n).to(device)
     infmatrix = get_infmatrix(edge_index.cpu(), n, m, args.eps).to(device)
-    graphdata = GraphData(graph, features, labels, edge_index, infmatrix, lap, args.hop)
+    graphdata = GraphData(features, labels, edge_index, infmatrix, lap, args.hop)
 
     net = NAD(features.shape[1], args.hidden_dim, 2, graphdata, args.init).to(device)
     optimizer = torch.optim.Adagrad(net.parameters(), lr=args.lr, weight_decay=args.decay)
@@ -117,6 +119,8 @@ def append_csv(args: argparse.Namespace, rows: list[dict]) -> None:
     result_path = Path(args.result_csv).expanduser()
     result_path.parent.mkdir(parents=True, exist_ok=True)
     exists = result_path.exists()
+
+    epochs = [r["best_epoch"] for r in rows]
     out = {
         "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "dataset": args.dataset,
@@ -124,11 +128,8 @@ def append_csv(args: argparse.Namespace, rows: list[dict]) -> None:
         "n_trials": args.n_trials,
         "auc": fmt([r["auc"] for r in rows]),
         "auprc": fmt([r["auprc"] for r in rows]),
-        "best_epoch": fmt([r["best_epoch"] / 100.0 for r in rows]).replace("±", "±").replace("（", "（"),
+        "best_epoch": f"{mean(epochs):.2f}±{pstdev(epochs):.2f}（{max(epochs)}）",
     }
-    # best_epoch is not a percentage metric; overwrite with compact integer summary.
-    epochs = [r["best_epoch"] for r in rows]
-    out["best_epoch"] = f"{mean(epochs):.2f}±{pstdev(epochs):.2f}（{max(epochs)}）"
 
     with result_path.open("a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(out.keys()))
@@ -155,8 +156,9 @@ def main() -> None:
         if args.verbose:
             print(
                 f"Trial {row['trial']}/{args.n_trials}: seed={row['seed']}, "
-                f"best_epoch={row['best_epoch']}, auc={row['auc']*100:.2f}, auprc={row['auprc']*100:.2f}"
+                f"best_epoch={row['best_epoch']}, auc={row['auc'] * 100:.2f}, auprc={row['auprc'] * 100:.2f}"
             )
+
     append_csv(args, rows)
 
 

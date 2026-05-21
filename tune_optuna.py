@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Tune SmoothGNN with Optuna")
     parser.add_argument("--dataset", required=True, help="Dataset name without .mat")
     parser.add_argument("--data_dir", default="~/datasets/GAD/mat")
-    parser.add_argument("--device", default="cpu", help="cpu, cuda, or cuda:0")
+    parser.add_argument("--device", default="cuda", help="cpu, cuda, or cuda:0")
     parser.add_argument("--n_trials", type=int, default=50, help="Number of Optuna trials")
     parser.add_argument("--repeat", type=int, default=1, help="Repeat each Optuna trial with different seeds and optimize mean AUC")
     parser.add_argument("--seed", type=int, default=1, help="Base seed for Optuna and model runs")

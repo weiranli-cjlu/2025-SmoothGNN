@@ -1,5 +1,8 @@
-"""Utility functions for SmoothGNN experiments on .mat graph anomaly datasets."""
+"""Utility functions for SmoothGNN experiments on .mat graph anomaly datasets.
 
+DGL has been removed. Graph structure is represented by a plain PyTorch
+``edge_index`` tensor with shape [2, num_edges].
+"""
 from __future__ import annotations
 
 import os
@@ -8,14 +11,12 @@ import time
 from pathlib import Path
 from typing import Optional, Tuple
 
-import dgl
 import numpy as np
 import scipy.io as sio
 import scipy.sparse as sp
 import torch
 from scipy.sparse import csgraph
 from sklearn.metrics import average_precision_score, roc_auc_score
-from torch_geometric.utils import degree
 
 
 def set_seed(seed: int) -> int:
@@ -66,27 +67,40 @@ def _to_label_tensor(y) -> torch.Tensor:
     return torch.from_numpy(y).long()
 
 
-def _edge_index_from_adj(adj) -> torch.Tensor:
+def _edge_index_from_adj(adj, num_nodes: int) -> torch.Tensor:
+    """Convert adjacency to edge_index, remove old self-loops and add one per node."""
     if not sp.issparse(adj):
         adj = sp.coo_matrix(adj)
     else:
         adj = adj.tocoo()
-    row = torch.from_numpy(adj.row.astype(np.int64))
-    col = torch.from_numpy(adj.col.astype(np.int64))
-    edge_index = torch.stack([row, col], dim=0)
-    return edge_index
+
+    mask = adj.row != adj.col
+    row = adj.row[mask].astype(np.int64)
+    col = adj.col[mask].astype(np.int64)
+
+    self_loops = np.arange(num_nodes, dtype=np.int64)
+    row = np.concatenate([row, self_loops])
+    col = np.concatenate([col, self_loops])
+
+    # Drop duplicate entries that can appear in some .mat files.
+    edge_pairs = np.stack([row, col], axis=1)
+    edge_pairs = np.unique(edge_pairs, axis=0)
+    return torch.from_numpy(edge_pairs.T).long()
 
 
-def load_data(dataset: str, data_dir: str | Path = "~/datasets/GAD/mat") -> Tuple[dgl.DGLGraph, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Load a GAD .mat dataset and return DGL graph, features, labels, edge_index and eval index.
+def load_data(
+    dataset: str,
+    data_dir: str | Path = "~/datasets/GAD/mat",
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Load a GAD .mat dataset.
+
+    Returns:
+        features, labels, edge_index, eval_index
 
     Supported common keys:
-      adjacency: Network / network / A / adj / Adj / adjacency
-      features: Attributes / attributes / X / x / feature / features / attr
-      labels: Label / label / y / gnd / anomaly_label
-
-    If <dataset>_index.txt exists beside the .mat file, it is used as eval index;
-    otherwise all labelled nodes are evaluated.
+        adjacency: Network / network / A / adj / Adj / adjacency
+        features:  Attributes / attributes / X / x / feature / features / attr
+        labels:    Label / label / y / gnd / anomaly_label
     """
     data_dir = Path(data_dir).expanduser()
     mat_path = data_dir / f"{dataset}.mat"
@@ -95,29 +109,24 @@ def load_data(dataset: str, data_dir: str | Path = "~/datasets/GAD/mat") -> Tupl
 
     mat = sio.loadmat(mat_path)
     adj = _first_key(mat, ("Network", "network", "A", "adj", "Adj", "adjacency"))
-    features = _to_dense_float_tensor(_first_key(mat, ("Attributes", "attributes", "X", "x", "feature", "features", "attr", "Feat", "feat")))
+    features = _to_dense_float_tensor(
+        _first_key(mat, ("Attributes", "attributes", "X", "x", "feature", "features", "attr", "Feat", "feat"))
+    )
     labels = _to_label_tensor(_first_key(mat, ("Label", "label", "y", "Y", "gnd", "anomaly_label", "labels")))
 
     n = features.shape[0]
     if labels.shape[0] != n:
         raise ValueError(f"Feature/label size mismatch: features={n}, labels={labels.shape[0]}")
 
-    edge_index = _edge_index_from_adj(adj)
-    graph = dgl.graph((edge_index[0], edge_index[1]), num_nodes=n)
-    graph = dgl.remove_self_loop(graph)
-    graph = dgl.add_self_loop(graph)
-    src, dst = graph.edges()
-    edge_index = torch.stack([src, dst], dim=0)
-
-    graph.ndata["feature"] = features
-    graph.ndata["label"] = labels
+    edge_index = _edge_index_from_adj(adj, n)
 
     index_path = data_dir / f"{dataset}_index.txt"
     if index_path.exists():
         index = torch.from_numpy(np.loadtxt(index_path, dtype=np.int64)).long()
     else:
         index = torch.arange(n, dtype=torch.long)
-    return graph, features, labels, edge_index, index
+
+    return features, labels, edge_index, index
 
 
 def sparse_mx_to_torch_sparse_tensor(sparse_mx) -> torch.Tensor:
@@ -139,7 +148,8 @@ def get_lap(edge_index: torch.Tensor, n: int) -> torch.Tensor:
 
 
 def get_infmatrix(edge_index: torch.Tensor, n: int, m: int, eps: float = 0.0) -> torch.Tensor:
-    deg = degree(edge_index[0], n) + 1
+    # Equivalent to torch_geometric.utils.degree(edge_index[0], n), without PyG.
+    deg = torch.bincount(edge_index[0].cpu(), minlength=n).float() + 1
     deg = torch.sqrt(deg / (2 * m + n))
     deg = torch.where(deg < eps, torch.zeros_like(deg), deg)
     deg = deg.unsqueeze(dim=-1).to_sparse()
