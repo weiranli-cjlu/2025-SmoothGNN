@@ -6,7 +6,7 @@
 
 ```bash
 uv venv -p 3.12
-uv pip install torch==2.4.0 torch_geometric scikit-learn --torch-backend=cpu
+uv pip install torch==2.4.0 torch_geometric scikit-learn optuna pandas --torch-backend=cpu
 uv pip install dgl==2.4.0 -f https://data.dgl.ai/wheels/torch-2.4/repo.html
 ```
 
@@ -100,12 +100,3 @@ time,dataset,training_rounds,n_trials,auc,auprc,best_epoch
 ```
 
 其中 AUC/AUPRC 已乘以 100 并保留两位小数，格式为 `均值±标准差（最大值）`。
-
-## 主要修改点
-
-1. 删除训练过程逐 epoch 的 loss/time 打印，只保留最终汇总；可用 `--verbose` 打印每个 trial 的简短结果。
-2. 添加 `--n_trials` 和 `--seed`，第 `i` 个 trial 使用 `seed+i`。
-3. 默认使用 `~/datasets/GAD/mat/<dataset>.mat`，不再依赖仓库内 `datasets/` 文件夹。
-4. 结果追加到 CSV，不保存模型、checkpoint 或训练日志。
-5. 修复原 `model.py` 中普通 Python list 存放 `nn.Linear` 的问题，改为 `nn.ModuleList`，确保参数被优化器正确管理。
-6. 清理 `name.py` 依赖，将原配置迁移到 `config.py` 和 README 的命令行说明。

@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="SmoothGNN for unsupervised node anomaly detection")
     parser.add_argument("--dataset", "--data", dest="dataset", default="Amazon", help="Dataset name without .mat")
     parser.add_argument("--data_dir", default="~/datasets/GAD/mat", help="Directory containing .mat datasets")
-    parser.add_argument("--result_csv", default="results/smoothgnn_results.csv", help="CSV path for summarized results")
+    parser.add_argument("--result_csv", type=str, default=None, help="CSV path for summarized results")
     parser.add_argument("--n_trials", type=int, default=1, help="Number of independent trials")
     parser.add_argument("--seed", type=int, default=1, help="Base random seed; trial i uses seed+i")
     parser.add_argument("--use_original_defaults", action="store_true", help="Use grouped defaults from the original paper/code when available")
@@ -112,6 +112,8 @@ def fmt(values: list[float]) -> str:
 
 
 def append_csv(args: argparse.Namespace, rows: list[dict]) -> None:
+    if args.result_csv is None:
+        return
     result_path = Path(args.result_csv).expanduser()
     result_path.parent.mkdir(parents=True, exist_ok=True)
     exists = result_path.exists()
