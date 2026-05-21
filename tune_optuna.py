@@ -38,16 +38,22 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=1, help="Base seed for Optuna and model runs")
     parser.add_argument("--timeout", type=int, default=None, help="Optuna timeout in seconds")
     parser.add_argument("--study_name", default=None, help="Optuna study name")
-    parser.add_argument("--storage", default=None, help="Optuna storage, e.g. sqlite:///smoothgnn_optuna.db")
+    parser.add_argument("--storage", default=None, help="Optuna storage, e.g. sqlite:///optuna_results/smoothgnn_optuna.db")
     parser.add_argument("--direction", choices=["maximize", "minimize"], default="maximize")
     parser.add_argument("--metric", choices=["auc", "auprc"], default="auc", help="Metric used as Optuna objective")
-    parser.add_argument("--result_csv", default="results/smoothgnn_optuna.csv", help="CSV path for tuning records")
+    parser.add_argument("--result_path", default="optuna_results", help="CSV and best info path")
     parser.add_argument("--fixed_nepoch", type=int, default=None, help="Fix epochs instead of tuning nepoch")
     parser.add_argument("--fixed_hidden_dim", type=int, default=None, help="Fix hidden_dim instead of tuning it")
     parser.add_argument("--use_original_defaults", action="store_true", help="Only affects fallback values when a search space is fixed")
     parser.add_argument("--tqdm", action="store_true", help="Show inner training tqdm bars")
     parser.add_argument("--verbose", action="store_true", help="Print every Optuna trial summary")
-    return parser.parse_args()
+    cli = parser.parse_args()
+    os.makedirs(cli.result_path, exist_ok=True)
+    cli.study_name = cli.study_name or f"smoothgnn_{cli.dataset}_{cli.metric}"
+    cli.result_csv = os.path.join(cli.result_path, cli.study_name+".csv")
+    cli.result_json = os.path.join(cli.result_path, cli.study_name+".json")
+
+    return cli
 
 
 def suggest_params(trial: optuna.Trial, cli: argparse.Namespace) -> dict:
@@ -158,9 +164,8 @@ def main() -> None:
     cli = parse_args()
     sampler = optuna.samplers.TPESampler(seed=cli.seed, multivariate=True, group=True)
     pruner = optuna.pruners.MedianPruner(n_startup_trials=8, n_warmup_steps=0)
-    study_name = cli.study_name or f"smoothgnn_{cli.dataset}_{cli.metric}"
     study = optuna.create_study(
-        study_name=study_name,
+        study_name=cli.study_name,
         storage=cli.storage,
         direction=cli.direction,
         sampler=sampler,
@@ -185,6 +190,9 @@ def main() -> None:
     print("\nRecommended final evaluation command")
     print(f"  {command}")
 
+    result = {"Best trial":best.number, cli.metric:f"{best.value * 100:.2f}", "Command": command}
+    with open(cli.result_json, "w", encoding="utf-8") as f:
+        json.dump(result, f, ensure_ascii=False, indent=2)
 
 if __name__ == "__main__":
     main()
