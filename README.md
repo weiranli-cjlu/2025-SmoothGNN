@@ -95,7 +95,107 @@ python main.py --dataset elliptic --lr 0.0005 --hop 6 --init 0.05 --seed 23 --ep
 
 ```text
 time,dataset,training_rounds,n_trials,auc,auprc,best_epoch
-2026-05-20 10:15,Amazon,100,5,90.21±2.33（91.00）,78.32±1.42（80.10）,56.40±12.03（77）
+2026-05-20 10:15,Amazon,100,5,90.21±2.33(91.00),78.32±1.42(80.10),56.40±12.03(77)
 ```
 
-其中 AUC/AUPRC 已乘以 100 并保留两位小数，格式为 `均值±标准差（最大值）`。
+其中 AUC/AUPRC 已乘以 100 并保留两位小数，格式为 `均值±标准差(最大值)`。
+
+## 实验
+
+```bash
+python main.py --dataset Disney \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.002618 --weight_decay 5.1566e-07 --hidden_dim 64 --hop 8 \
+  --eps 0.001 --init 0.041936 --nepoch 200 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset book \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.0024611 --weight_decay 2.68583e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.002 --init 0.01054 --nepoch 250 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset Facebook \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.0024611 --weight_decay 2.68583e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.002 --init 0.01054 --nepoch 250 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset cora \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.0015078 --weight_decay 3.5599e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.0 --init 0.01174549 --nepoch 200 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset citeseer \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.00246111 --weight_decay 2.68583e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.002 --init 0.01054 --nepoch 250 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset twitter \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.0024611 --weight_decay 2.68583e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.002 --init 0.010542 --nepoch 250 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset tolokers \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.0024611 --weight_decay 2.68583e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.002 --init 0.010542 --nepoch 250 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset Amazon \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.00150783 --weight_decay 3.5599e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.0 --init 0.011745 --nepoch 200 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset ACM \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.002461 --weight_decay 2.6858e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.002 --init 0.01054 --nepoch 250 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset Flickr \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.00150783 --weight_decay 3.5599e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.0 --init 0.011745 --nepoch 200 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset BlogCatalog \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.002461 --weight_decay 2.68583e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.002 --init 0.010542 --nepoch 250 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset YelpChi \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.0024611 --weight_decay 2.68583e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.002 --init 0.010542 --nepoch 250 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset Reddit \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.002618 --weight_decay 5.1566e-07 --hidden_dim 64 --hop 8 \
+  --eps 0.001 --init 0.041936 --nepoch 200 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset weibo \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.0006794 --weight_decay 7.02283e-08 --hidden_dim 128 --hop 3 \
+  --eps 0.004 --init 0.010373 --nepoch 200 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset questions \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.0035435 --weight_decay 2.21932e-06 --hidden_dim 16 --hop 8 \
+  --eps 0.004 --init 0.0128126 --nepoch 100 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+
+python main.py --dataset pubmed \
+  --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
+  --lr 0.0024611 --weight_decay 2.685833e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.002 --init 0.010542 --nepoch 250 --device cuda \
+  --result_csv results/smoothgnn_results.csv --tqdm
+```

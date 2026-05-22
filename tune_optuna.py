@@ -97,7 +97,7 @@ def build_train_args(cli: argparse.Namespace, params: dict, seed: int) -> argpar
 
 def fmt_metric(values: list[float]) -> str:
     vals = [v * 100 for v in values]
-    return f"{mean(vals):.2f}±{pstdev(vals):.2f}（{max(vals):.2f}）"
+    return f"{mean(vals):.2f}±{pstdev(vals):.2f}({max(vals):.2f})"
 
 
 def append_record(path: str | Path, row: dict) -> None:
@@ -147,7 +147,7 @@ def objective_factory(cli: argparse.Namespace):
             "objective": f"{value * 100:.2f}",
             "auc": fmt_metric(aucs),
             "auprc": fmt_metric(auprcs),
-            "best_epoch": f"{mean(best_epochs):.2f}±{pstdev(best_epochs):.2f}（{max(best_epochs)}）",
+            "best_epoch": f"{mean(best_epochs):.2f}±{pstdev(best_epochs):.2f}({max(best_epochs)})",
             "repeat": cli.repeat,
             "params": json.dumps(params, ensure_ascii=False, sort_keys=True),
         }

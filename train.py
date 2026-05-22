@@ -110,7 +110,7 @@ def train_one_trial(args: argparse.Namespace, trial_id: int) -> dict:
 
 def fmt(values: list[float]) -> str:
     vals = [v * 100 for v in values]
-    return f"{mean(vals):.2f}±{pstdev(vals):.2f}（{max(vals):.2f}）"
+    return f"{mean(vals):.2f}±{pstdev(vals):.2f}({max(vals):.2f})"
 
 
 def append_csv(args: argparse.Namespace, rows: list[dict]) -> None:
@@ -128,7 +128,7 @@ def append_csv(args: argparse.Namespace, rows: list[dict]) -> None:
         "n_trials": args.n_trials,
         "auc": fmt([r["auc"] for r in rows]),
         "auprc": fmt([r["auprc"] for r in rows]),
-        "best_epoch": f"{mean(epochs):.2f}±{pstdev(epochs):.2f}（{max(epochs)}）",
+        "best_epoch": f"{mean(epochs):.2f}±{pstdev(epochs):.2f}({max(epochs)})",
     }
 
     with result_path.open("a", newline="", encoding="utf-8") as f:
