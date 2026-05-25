@@ -123,8 +123,8 @@ python main.py --dataset Facebook \
 
 python main.py --dataset cora \
   --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
-  --lr 0.0015078 --weight_decay 3.5599e-07 --hidden_dim 128 --hop 8 \
-  --eps 0.0 --init 0.01174549 --nepoch 200 --device cuda \
+  --lr 0.0024611107172518533 --weight_decay 2.6858332130184047e-07 --hidden_dim 128 --hop 8 \
+  --eps 0.002 --init 0.01054206834316765 --nepoch 250 --device cuda \
   --result_csv results/smoothgnn_results.csv --tqdm
 
 python main.py --dataset citeseer \
