@@ -22,21 +22,21 @@ python tune_optuna.py --dataset Amazon --n_trials 50 --repeat 3 --timeout 7200 -
 
 ```bash
 python tune_optuna.py --dataset Amazon --n_trials 80 --repeat 3 --timeout 10800 --device cuda:0 \
-  --storage sqlite:///results/smoothgnn_optuna.db
+  --storage sqlite:///optuna_results/smoothgnn_optuna.db
 ```
 
 中等数据集：
 
 ```bash
 python tune_optuna.py --dataset YelpChi --n_trials 50 --repeat 3 --fixed_nepoch 150 --device cuda:0 \
-  --storage sqlite:///results/smoothgnn_optuna.db
+  --storage sqlite:///optuna_results/smoothgnn_optuna.db
 ```
 
 大数据集：
 
 ```bash
 python tune_optuna.py --dataset elliptic --n_trials 30 --repeat 1 --fixed_hidden_dim 64 --fixed_nepoch 100 --device cuda:0 \
-  --storage sqlite:///results/smoothgnn_optuna.db
+  --storage sqlite:///optuna_results/smoothgnn_optuna.db
 ```
 
 调优结束后脚本会打印一条 `python main.py ...` 命令，用该命令再做正式 `--n_trials 10` 评估。

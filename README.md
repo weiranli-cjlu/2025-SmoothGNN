@@ -141,8 +141,8 @@ python main.py --dataset twitter \
 
 python main.py --dataset tolokers \
   --data_dir ~/datasets/GAD/mat --n_trials 10 --seed 1 \
-  --lr 0.0024611 --weight_decay 2.68583e-07 --hidden_dim 128 --hop 8 \
-  --eps 0.002 --init 0.010542 --nepoch 250 --device cuda \
+  --lr 0.004665005156599687 --weight_decay 1.8628136360094855e-05 --hidden_dim 128 --hop 4 \
+  --eps 0.0001 --init 0.07287696031661514 --nepoch 300 --device cuda \
   --result_csv results/smoothgnn_results.csv --tqdm
 
 python main.py --dataset Amazon \
