@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 from datetime import datetime
 from pathlib import Path
 from statistics import mean, pstdev
@@ -21,6 +22,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--dataset", "--data", dest="dataset", default="Amazon", help="Dataset name without .mat")
     parser.add_argument("--data_dir", default="~/datasets/GAD/mat", help="Directory containing .mat datasets")
     parser.add_argument("--result_csv", type=str, default=None, help="CSV path for summarized results")
+    parser.add_argument(
+        "--result-dir",
+        "--result_dir",
+        dest="result_dir",
+        type=str,
+        default=None,
+        help="Directory for per-trial anomaly scores and ground-truth labels",
+    )
     parser.add_argument("--n_trials", type=int, default=1, help="Number of independent trials")
     parser.add_argument("--seed", type=int, default=1, help="Base random seed; trial i uses seed+i")
     parser.add_argument("--use_original_defaults", action="store_true", help="Use grouped defaults from the original paper/code when available")
@@ -46,6 +55,58 @@ def apply_defaults(args: argparse.Namespace) -> argparse.Namespace:
     if args.use_original_defaults and args.seed == 1 and "seed" in cfg:
         args.seed = cfg["seed"]
     return args
+
+
+def _safe_filename_component(value: str) -> str:
+    """Return a cross-platform-safe filename component."""
+    component = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', "_", str(value))
+    component = component.strip(" .")
+    return component or "unknown"
+
+
+def save_trial_results(
+    result_dir: str | Path,
+    dataset: str,
+    trial_id: int,
+    seed: int,
+    scores,
+    labels,
+) -> Path:
+    """Overwrite one trial's per-node anomaly scores and true labels as CSV."""
+    score_tensor = torch.as_tensor(scores).detach().cpu().reshape(-1)
+    label_tensor = torch.as_tensor(labels).detach().cpu().reshape(-1)
+
+    if score_tensor.numel() != label_tensor.numel():
+        raise ValueError(
+            "Cannot save trial results: anomaly scores and labels have different "
+            f"lengths ({score_tensor.numel()} != {label_tensor.numel()})."
+        )
+
+    unique_labels = set(label_tensor.tolist())
+    if not unique_labels.issubset({0, 1}):
+        raise ValueError(
+            "Cannot save trial results: is_anomaly labels must be 0 or 1, "
+            f"got {sorted(unique_labels)}."
+        )
+
+    output_dir = Path(result_dir).expanduser()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    dataset_name = str(dataset)
+    if dataset_name.lower().endswith(".mat"):
+        dataset_name = dataset_name[:-4]
+    filename = (
+        f"{_safe_filename_component(dataset_name)}__SmoothGNN__"
+        f"run-{trial_id + 1}__seed-{seed}.csv"
+    )
+    output_path = output_dir / filename
+
+    with output_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["sample_index", "anomaly_score", "is_anomaly"])
+        for sample_index, (score, label) in enumerate(zip(score_tensor, label_tensor)):
+            writer.writerow([sample_index, f"{float(score):.17g}", int(label)])
+
+    return output_path
 
 
 def train_one_trial(args: argparse.Namespace, trial_id: int) -> dict:
@@ -74,6 +135,7 @@ def train_one_trial(args: argparse.Namespace, trial_id: int) -> dict:
     best_auc = float("-inf")
     best_auprc = float("-inf")
     best_epoch = 0
+    best_scores = None
     final_loss = 0.0
 
     loop = range(args.nepoch)
@@ -97,6 +159,21 @@ def train_one_trial(args: argparse.Namespace, trial_id: int) -> dict:
             best_auc = auc
             best_auprc = auprc
             best_epoch = epoch + 1
+            best_scores = scores.detach().cpu().clone()
+
+    result_dir = getattr(args, "result_dir", None)
+    if result_dir is not None:
+        if best_scores is None:
+            raise RuntimeError("Cannot save trial results because no training epoch was run.")
+        result_path = save_trial_results(
+            result_dir=result_dir,
+            dataset=args.dataset,
+            trial_id=trial_id,
+            seed=seed,
+            scores=best_scores,
+            labels=labels,
+        )
+        print(f"Saved trial results to: {result_path}")
 
     return {
         "trial": trial_id + 1,

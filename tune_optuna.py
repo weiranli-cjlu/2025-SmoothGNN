@@ -79,6 +79,7 @@ def build_train_args(cli: argparse.Namespace, params: dict, seed: int) -> argpar
         dataset=cli.dataset,
         data_dir=cli.data_dir,
         result_csv=cli.result_csv,
+        result_dir=None,
         n_trials=1,
         seed=seed,
         use_original_defaults=cli.use_original_defaults,

@@ -66,6 +66,30 @@ python main.py --dataset YelpChi --use_original_defaults --n_trials 5 --lr 0.001
 python main.py --dataset elliptic --use_original_defaults --n_trials 3 --nepoch 100
 ```
 
+## 保存逐样本异常结果
+
+通过 `--result-dir` 为每次 trial 分别保存异常分数和数据集真实标签：
+
+```bash
+python main.py --dataset Disney --n_trials 2 --seed 42 \
+  --result-dir results/scores
+```
+
+生成文件示例：
+
+```text
+Disney__SmoothGNN__run-1__seed-42.csv
+Disney__SmoothGNN__run-2__seed-43.csv
+```
+
+每个文件按原始节点顺序保存最佳 AUC epoch 的完整结果：
+
+```text
+sample_index,anomaly_score,is_anomaly
+```
+
+其中 `is_anomaly` 是数据集真实的 `0/1` 标签。未指定 `--result-dir` 时不会生成逐样本结果文件。
+
 ## 原作者配置到命令行的对应关系
 
 原代码中 `name.py` 的分组配置为：
